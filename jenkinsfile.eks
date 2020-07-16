@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+	tools 
+		{
+        maven 'maven3.5'
+       
+		}	
+
+    stages {
+        stage('Hello') {
+            steps {
+				
+                echo 'Hello World'
+            }
+        }
+		
+		stage('Git checkout')
+		{
+			steps
+			{
+				git credentialsId: '052b7740-9aff-4445-8c23-94a2c46b4398', url: 'https://github.com/aparnashukla143/spring-jenkins-project.git'
+			}
+		}
+		
+		stage('Maven Compile')
+		{
+			steps
+			{
+				sh label: '', script: 'mvn clean compile'
+				sh label: '', script: '''mvn clean 
+                mvn compile'''
+			}
+		}
+		stage('Maven Test')
+		{
+			steps
+			{
+				sh label: '', script: 'mvn compiler:testCompile -Dfilename=testng-unit.xml surefire:test'
+			}
+	
+		
+		post{
+                always
+				{
+                    step([$class: 'Publisher'])
+                }
+			}
+		}
+		
+		stage('Maven Package')
+		{
+			steps
+			{
+				sh label: '', script: 'mvn clean package -DskipTests'
+			}
+		}
+		
+    }
+}
