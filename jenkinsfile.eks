@@ -39,12 +39,12 @@ pipeline {
 			}
 	
 		
-		post{
+		/*post{
                 always
 				{
                     step([$class: 'Publisher'])
                 }
-			}
+			*/}
 		}
 		
 		stage('Maven Package')
