@@ -1,59 +1,109 @@
 pipeline {
     agent any
-	tools 
-		{
-        maven 'maven3.5'
-       
-		}	
-
+    tools { 
+        maven 'maven3.5' 
+        
+        
+    }
     stages {
         stage('Hello') {
             steps {
-				
                 echo 'Hello World'
             }
         }
+
+        stage('SCM Checkout')  {
+            steps {
+                git credentialsId: 'githuncredentails', url: 'https://github.com/aparnashukla143/spring-jenkins-project.git'
+            }
+        } 
+
+        stage('Compile') {
+            steps {
+                sh label: '', script: 'mvn clean package -DskipTests=true'
+            }
+        }
+         
+		 
+		stage('Build Docker Imager'){
+		steps {
+        sh 'docker build -t aparnashukla143/spring-project:0.0.1 .'
+	  }
+              
+		} 
 		
-		stage('Git checkout')
-		{
-			steps
-			{
-				git credentialsId: '052b7740-9aff-4445-8c23-94a2c46b4398', url: 'https://github.com/aparnashukla143/spring-jenkins-project.git'
-			}
+		stage('Push docker image'){
+		steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
+    	sh 'docker login -u $USER -p $PASSWORD'
+	sh 'docker push aparnashukla143/spring-project:0.0.1'
+}
+	  }
+              
 		}
-		
-		stage('Maven Compile')
-		{
-			steps
-			{
-				sh label: '', script: 'mvn clean compile'
-				sh label: '', script: '''mvn clean 
-                mvn compile'''
-			}
-		}
-		stage('Maven Test')
-		{
-			steps
-			{
-				sh label: '', script: 'mvn compiler:testCompile -Dfilename=testng-unit.xml surefire:test'
-			}
+		stage('Run Docker container '){
+		steps {
+       
+    	sh 'docker run -it -d --name webapp -p 8090:8080 aparnashukla143/spring-project:0.0.1 '
 	
+
+	  }
+              
+		}
 		
-		/*post{
-                always
-				{
+		 
+		 
+       /* stage('Application_Unit_Test'){
+            steps {
+                sh label: '', script: 'mvn compiler:testCompile -Dfilename=testng-unit.xml surefire:test'
+            }
+            post{
+                always{
                     step([$class: 'Publisher'])
                 }
-			}*/
-		}
-		
-		stage('Maven Package')
-		{
-			steps
-			{
-				sh label: '', script: 'mvn clean package -DskipTests'
-			}
-		}
-		
+            }
+        } */
+      /*  stage('Code Coverage'){
+            steps {
+
+                //sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml -Dsurefire.suiteXmlFiles=testng-unit.xml '
+                  sh ' mvn clean install cobertura:cobertura  -Dcobertura.report.format=xml -Dsurefire.suiteXmlFiles=testng-unit.xml'
+                //  sh 'cat target/site/cobertura/coverage.xml'
+            }
+
+        } */
+    /*    stage('SonarQube analysis') {
+        
+        steps {
+       
+        withSonarQubeEnv('Sonarqube') { // If you have configured more than one global server connection, you can specify its name
+        sh "mvn sonar:sonar"
+      //  sh "${scannerHome}/bin/sonar-scanner"
+        }
+      }
+
+  } */
+  
+    /*  stage('sonarqube quality gate'){
+            steps {
+            script{        
+                 timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
+                 def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv 
+                 if (qg.status != 'OK') 
+                 {              
+                 error "Pipeline aborted due to quality gate failure: ${qg.status}"  
+                 }   
+                 } 
+                 }
+            }
+      } */
+      //  stage('Package'){
+      //      steps {
+      //          sh label: '', script: 'scp -o StrictHostKeyChecking=no target/*.war ec2-user@52.55.54.236:/opt/tomcat/webapps'
+      //      }
+      //  }
+        
+        
     }
+
 }
